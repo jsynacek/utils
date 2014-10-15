@@ -1,0 +1,13 @@
+#!/bin/bash
+
+vm_mountpoint=/mnt/virtual
+systemd_srcdir=$HOME/work/git/upstream/systemd
+
+mount | grep "$vm_mountpoint" || sudo mount "$vm_mountpoint"
+
+sudo systemd-nspawn -D /srv/rawhide-systemd-devel --bind="$systemd_srcdir" --bind="$vm_mountpoint" \
+     /bin/bash -c "cd \"$systemd_srcdir\" ; make -j -l3.0 && make install DESTDIR=\"$vm_mountpoint\""
+
+sudo umount "$vm_mountpoint"
+sudo chown jsynacek:jsynacek -R "$systemd_srcdir"
+
