@@ -1,0 +1,7 @@
+#!/bin/bash
+
+domain="$1"
+snapshot="${2:-backup}"
+
+virsh snapshot-delete "$domain" "$snapshot" &> /dev/null
+virsh snapshot-create-as "$domain" "$snapshot"
