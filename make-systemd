@@ -4,6 +4,10 @@ vm_mountpoint=/mnt/virtual
 systemd_srcdir=$HOME/work/git/upstream/systemd
 
 mount | grep "$vm_mountpoint" || sudo mount "$vm_mountpoint"
+if [[ $? != 0 ]]; then
+    echo "Unable to mount $vm_mountpoint, exiting." >&2
+    exit 1
+fi
 
 sudo systemd-nspawn -D /srv/rawhide-systemd-devel --bind="$systemd_srcdir" --bind="$vm_mountpoint" \
      /bin/bash -c "cd \"$systemd_srcdir\" ; make -j -l3.8 && make install DESTDIR=\"$vm_mountpoint\""
