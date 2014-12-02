@@ -11,6 +11,7 @@ fi
 
 sudo systemd-nspawn -D /srv/rawhide-systemd-devel --bind="$systemd_srcdir" --bind="$vm_mountpoint" \
      /bin/bash -c "cd \"$systemd_srcdir\" ; make -j -l3.8 && make install DESTDIR=\"$vm_mountpoint\""
+[[ $? == 0 ]] || exit $?
 
 sudo umount "$vm_mountpoint"
 sudo chown "$USER":"$USER" -R "$systemd_srcdir"
