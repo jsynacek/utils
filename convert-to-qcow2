@@ -1,0 +1,11 @@
+#!/bin/bash
+
+set -e
+
+images="/var/lib/libvirt/images"
+for file in $(ls $images); do
+    echo "Converting $file to qcow2"
+    mv "$images/$file" "$images/$file.backup"
+    qemu-img convert -O qcow2 "$images/$file.backup" "$images/$file"
+    rm -i "$images/$file.backup"
+done
