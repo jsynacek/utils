@@ -1,0 +1,70 @@
+#!/bin/bash
+
+# Helper script for systemd development
+# Author: Jan Synáček <jsynacek@redhat.com>
+# Date: Feb 2015
+
+nspawn=systemd-nspawn
+vm_mountpoint="/run/systemd-devel/mnt/"
+systemd_srcdir="$HOME/work/git/upstream/systemd"
+
+make_conf="-j -l3.8"
+
+function die {
+    msg=$1
+    if [ ! -z "$msg" ]; then
+	echo "$msg">&2
+    fi
+    clean_up
+    exit 1
+}
+
+function clean_up {
+    sudo umount $vm_mountpoint &>/dev/null
+    sudo chown "$USER":"$USER" -R "$systemd_srcdir"
+}
+
+function handle_interrupt {
+    clean_up
+    exit 0
+}
+
+function mount_vm {
+    sudo mkdir -p $vm_mountpoint &>/dev/null
+    mount | grep $vm_mountpoint || sudo mount $vm_mountpoint
+    if [[ $? != 0 ]]; then
+	die "Unable to mount $vm_mountpoint, exiting."
+    fi
+}
+
+trap handle_interrupt SIGINT
+trap handle_interrupt SIGTERM
+
+mount_vm
+
+rc=0
+opt=$1
+case "$opt" in
+    prep)
+	sudo $nspawn -M rawhide --bind="$systemd_srcdir" \
+	     /bin/bash -c "cd \"$systemd_srcdir\" ; sh autogen.sh ; ./configure CFLAGS='-g3 -O0 -ftrapv -DVALGRIND=1' --enable-compat-libs --prefix=/usr --localstatedir=/var --sysconfdir=/etc --libexecdir=/usr/lib"
+	rc=$?
+	;;
+    build)
+	sudo $nspawn -M rawhide --bind="$systemd_srcdir" --bind="$vm_mountpoint" \
+	     /bin/bash -c "cd \"$systemd_srcdir\" ; make $make_conf && make install DESTDIR=\"$vm_mountpoint\""
+	rc=$?
+	;;
+    inspect)
+	sudo $nspawn -M rawhide --bind="$systemd_srcdir" --bind="$vm_mountpoint" \
+	     /bin/bash -c "cd \"$systemd_srcdir\" ; PS1=\"\\w # \" exec /bin/bash"
+	rc=$?
+	;;
+    *)
+	die "Unknown command: $opt"
+	;;
+esac
+
+clean_up
+exit $rc
+
