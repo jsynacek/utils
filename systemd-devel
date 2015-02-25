@@ -7,6 +7,7 @@
 nspawn=systemd-nspawn
 vm_mountpoint="/run/systemd-devel/mnt/"
 systemd_srcdir="$HOME/work/git/upstream/systemd"
+dracut_srcdir="$HOME/work/git/upstream/dracut"
 
 make_conf="-j -l3.8"
 
@@ -60,6 +61,11 @@ case "$opt" in
 	     /bin/bash -c "cd \"$systemd_srcdir\" ; PS1=\"\\w # \" exec /bin/bash"
 	rc=$?
 	;;
+    dracut)
+	sudo $nspawn -M rawhide --bind="$dracut_srcdir" --bind="$vm_mountpoint" \
+	     /bin/bash -c "cd \"$dracut_srcdir\" ; ./configure --sysconfdir=/etc && make ${make_conf} && make install DESTDIR=\"$vm_mountpoint\""
+	rc=$?
+	;;
     *)
 	die "Unknown command: $opt"
 	;;
@@ -67,4 +73,3 @@ esac
 
 clean_up
 exit $rc
-
